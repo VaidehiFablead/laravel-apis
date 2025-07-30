@@ -32,8 +32,6 @@ class LoginController extends Controller
         return redirect('/login');
     }
 
-
-
     // public function __construct()
     // {
     //     $this->middleware('guest')->except('logout');

@@ -53,7 +53,7 @@
                                     <td>{{ $customers->gender }}</td>
                                     <td>{{ $customers->city }}</td>
                                     <td>{{ $customers->address }}</td>
-                                    <td>{{ $customers->contact }}</td>
+                                    <td>{{ $customers->contact_info }}</td>
                                     <td>
                                         <a href="{{ route('customer.edit', $customers->customer_id) }}"
                                             class="btn btn-warning btn-sm">Edit</a>

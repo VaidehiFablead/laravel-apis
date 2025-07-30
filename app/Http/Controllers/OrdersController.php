@@ -66,14 +66,16 @@ class OrdersController extends Controller
         return response()->json(['message' => 'Order placed successfully with combined values']);
     }
 
+    // public function index()
+    // {
+    //     $orders = OrderItem::with('customer')->get();
 
+    //     return view('viewOrder', compact('orders'));
+    // }
 
-    public function index()
+    public function viewOrder()
     {
-        $orders = Orders::all();
-        // print_r($orders);die;
-        
-        // $orders = Orders::select('order.*', 'order_items.product_name')->join('events_schedule', 'events_schedule.event_id', '=', 'events.id')->get();
+        $orders = OrderItem::with('order.customer')->get(); // eager load nested relationship
         return view('viewOrder', compact('orders'));
     }
 }

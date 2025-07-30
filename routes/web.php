@@ -7,6 +7,7 @@ use App\Http\Controllers\LoginController;
 use App\Http\Controllers\OrdersController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\StripePaymentController;
 use App\Http\Controllers\ViewCustomerController;
 use App\Models\Category;
 use Illuminate\Auth\Events\Login;
@@ -26,7 +27,7 @@ use Illuminate\Support\Facades\Route;
 
 
 
-Route::get('/login', [LoginController::class, 'showLogin'])->name('login'); 
+Route::get('/login', [LoginController::class, 'showLogin'])->name('login');
 Route::post('/login', [LoginController::class, 'login']);
 
 
@@ -48,8 +49,8 @@ Route::get('/add-product', [ProductController::class, 'create'])->name('add-prod
 
 // Handle form submit 
 Route::post('/add-product', [ProductController::class, 'store'])->name('add-product.store');
-Route::get('/edit-product/{id}', [ProductController::class, 'edit']);        
-Route::delete('/delete-product/{id}', [ProductController::class, 'destroy']); 
+Route::get('/edit-product/{id}', [ProductController::class, 'edit']);
+Route::delete('/delete-product/{id}', [ProductController::class, 'destroy']);
 
 
 // change password
@@ -65,12 +66,10 @@ Route::post('/addproductform', [ProductController::class, 'store'])->name('produ
 Route::get('/addproductform', [ProductController::class, 'create'])->name('addProductForm');
 
 
-
 // addcategory
 
 Route::get('/addcategoryForm', [CategoryController::class, 'create'])->name('addcategoryForm');
 Route::post('/addcategoryForm', [CategoryController::class, 'store'])->name('addcategory.store');
-
 
 // viewcategory
 
@@ -97,7 +96,6 @@ Route::get('/products', [ProductController::class, 'index'])->name('products.ind
 Route::get('/product', [ProductController::class, 'index'])->name('product');
 
 
-
 Route::get('/addcustomer', [CustomerController::class, 'index'])->name('addcustomer');
 Route::post('/addcustomer', [CustomerController::class, 'store'])->name('addcustomer.store');
 
@@ -119,7 +117,13 @@ Route::get('/orders', [OrdersController::class, 'showOrder'])->name('orders');
 Route::post('/place-order', [OrdersController::class, 'store'])->name('orders.store');
 
 
-Route::get('/viewOrder',[OrdersController::class,'index'])->name('viewOrder');
+// Route::get('/viewOrder',[OrdersController::class,'index'])->name('viewOrder');
 
 // Route::post('/delete-order/{id}', [OrdersController::class, 'deleteOrder'])->name('order.delete');
 
+Route::get('/viewOrder', [OrdersController::class, 'viewOrder'])->name('viewOrder');
+
+// stripe payment route
+
+Route::get('/stripe',[StripePaymentController::class,'show'])->name('stripe');
+Route::post('stripe/payment',[StripePaymentController::class,'stripePaymentIntent'])->name('stripe.payment');
