@@ -7,6 +7,8 @@ use App\Models\OrderItem;
 use App\Models\Orders;
 use App\Models\Product;
 use Illuminate\Http\Request;
+use Stripe\PaymentIntent;
+use Stripe\Stripe;
 
 class OrdersController extends Controller
 {
@@ -24,7 +26,6 @@ class OrdersController extends Controller
     {
         $request->validate([
             'customer_id' => 'required|exists:customer,customer_id',
-            'product_id' => 'required|array',
             'product_name' => 'required|array',
             'price' => 'required|array',
             'qty' => 'required|array',
@@ -32,50 +33,46 @@ class OrdersController extends Controller
             'subtotal' => 'required|numeric'
         ]);
 
-        // Step 1: Create the order
-        // $order = Orders::create([
-        //     'customer_id' => $request->customer_id,
-        //     'subtotal' => $request->subtotal,
-        // ]);
-
+        // Create the order
         $order = new Orders();
         $order->customer_id = $request->customer_id;
         $order->subtotal = $request->subtotal;
-        $order->save();
+        $order->save();  // Now $order->order_id will be available
 
-        // Convert arrays to comma-separated strings or JSON
-        // $productIds = implode(',', $request->product_id);
-        $productNames = json_encode($request->product_name);
-        $quantities = json_encode($request->qty);
-        $prices = json_encode($request->price);
-        // dd( $order->order_id);
-        // Insert single row into order_items
+        // Save order items
         OrderItem::create([
-            'order_id' => $order->order_id,
-
-            // 'product_id' => $productIds,
-            'product_name' => $productNames,
-            'qty' => $quantities,
-            'price' => $prices,
+            'order_id' => $order->order_id, // ✅ Use order_id here
+            'product_name' => json_encode($request->product_name),
+            'qty' => json_encode($request->qty),
+            'price' => json_encode($request->price),
             'subtotal' => $request->subtotal,
             'created_at' => now(),
             'updated_at' => now(),
         ]);
 
-
-        return response()->json(['message' => 'Order placed successfully with combined values']);
+        // Redirect to stripe page with order_id
+        return response()->json([
+            'redirect_url' => route('stripe.checkout', ['order_id' => $order->order_id])
+        ]);
     }
 
-    // public function index()
-    // {
-    //     $orders = OrderItem::with('customer')->get();
 
-    //     return view('viewOrder', compact('orders'));
-    // }
 
     public function viewOrder()
     {
         $orders = OrderItem::with('order.customer')->get(); // eager load nested relationship
         return view('viewOrder', compact('orders'));
+    }
+
+    public function stripeCheckout($order_id)
+    {
+        $order = Orders::findOrFail($order_id);
+        $orderItem = OrderItem::where('order_id', $order_id)->first();
+
+        $productNames = json_decode($orderItem->product_name);
+        $qtys = json_decode($orderItem->qty);
+        $prices = json_decode($orderItem->price);
+
+        return view('stripe', compact('order', 'productNames', 'qtys', 'prices'));
     }
 }

@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\GoogleController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\OrdersController;
 use App\Http\Controllers\ProductController;
@@ -44,6 +45,11 @@ Route::post('/profile', [ProfileController::class, 'updateProfile'])->name('prof
 
 // tables
 Route::get('/tables', [ProductController::class, 'showTable'])->name('tables');
+// Route::get('/tables', function () {
+//     return view('tables');
+// })->middleware('checklogin');
+
+
 // Show form 
 Route::get('/add-product', [ProductController::class, 'create'])->name('add-product');
 
@@ -125,5 +131,17 @@ Route::get('/viewOrder', [OrdersController::class, 'viewOrder'])->name('viewOrde
 
 // stripe payment route
 
-Route::get('/stripe',[StripePaymentController::class,'show'])->name('stripe');
-Route::post('stripe/payment',[StripePaymentController::class,'stripePaymentIntent'])->name('stripe.payment');
+Route::get('/stripe-checkout/{order_id}', [OrdersController::class, 'stripeCheckout'])->name('stripe.checkout');
+Route::post('/stripe/payment-intent', [StripePaymentController::class, 'stripePaymentIntent'])->name('stripe.intent');
+
+
+// google Login
+Route::get('/auth/google', [GoogleController::class, 'redirectGoogle'])->name('google.login');
+Route::get('/auth/google/callback', [GoogleController::class, 'handleGoogleCallback']);
+
+
+// success page
+Route::get('/thank-you/{order_id}', function ($order_id) {
+    $order = \App\Models\Orders::findOrFail($order_id);
+    return view('thank-you', compact('order'));
+});

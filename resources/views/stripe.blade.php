@@ -1,124 +1,130 @@
 @extends('layout.app')
 
 @section('content')
-    <style>
-        .StripeElement {
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-        }
-    </style>
-
     <div class="container mt-5">
         <div class="row">
-
+            <!-- Products -->
             <div class="col-md-6">
-                <h4>Order Summery</h4>
-
-                <table class="table">
+                <h4>Order Summary</h4>
+                <table class="table table-bordered">
                     <thead>
                         <tr>
                             <th>Product</th>
                             <th>Qty</th>
                             <th>Price</th>
-                            <th>SubTotal</th>
+                            <th>Total</th>
                         </tr>
                     </thead>
-
                     <tbody>
-                        @foreach ($products as $product)
+                        @foreach ($productNames as $i => $name)
                             <tr>
-                                <td>{{ $product['name'] }}</td>
-                                <td>{{ $product['qty'] }}</td>
-                                <td>{{ $product['price'] }}</td>
-                                <td>{{ $product['price'] * $product['qty'] }}</td>
+                                <td>{{ $name }}</td>
+                                <td>{{ $qtys[$i] }}</td>
+                                <td>₹{{ $prices[$i] }}</td>
+                                <td>₹{{ $qtys[$i] * $prices[$i] }}</td>
                             </tr>
                         @endforeach
                     </tbody>
                 </table>
-                <h5>Total: ₹<span id="total-amount">{{ $total }}</span></h5>
+                <div id="submit" class="btn btn-primary">Pay ₹{{ $order->subtotal }}</div>
+
+            </div>
+
+            <!-- Stripe Form -->
+            <div class="col-md-6">
+                <h4>Pay Now</h4>
+                <form id="payment-form">
+                    <input type="hidden" id="order_id" value="{{ $order->order_id }}">
+                    <input type="hidden" id="amount" value="{{ $order->subtotal }}">
+                    <div class="mb-3">
+                        <input type="text" id="name" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <input type="email" id="email" placeholder="Email" class="form-control">
+                    </div>
+                    <div id="card-element" class="form-control mb-3"></div>
+                    <div id="card-errors" class="text-danger mb-2"></div>
+                    <button id="submit" class="btn btn-primary">Pay ₹{{ $order->subtotal }}</button>
+                </form>
             </div>
         </div>
-
-
-        {{-- stripe payment from --}}
-        <div class="col-lg-6">
-            <h4>Payment</h4>
-            <form id="payment-form">
-                @csrf
-                <div class="mb-3">
-                    <label for="email" class="form-label">Email</label>
-                    <input type="email" class="form-control" id="email" required>
-                </div>
-
-                <div class="mb-3">
-                    <label for="name" class="form-label">Cardholder Name</label>
-                    <input type="text" class="form-control" id="name" required>
-                </div>
-
-                <div id="card-element" class="mb-3"></div>
-                <div id="card-errors" class="text-danger mb-3"></div>
-
-                <button class="btn btn-primary" type="submit">Pay ₹{{ $total }}</button>
-            </form>
-        </div>
     </div>
+@endsection
 
+@push('scripts')
     <script src="https://js.stripe.com/v3/"></script>
     <script>
-        const stripe = Stripe('{{ env('STRIPE_KEY') }}'
-            const element = stripe.elements();
-            const cards = element.create('card'); card.mount("#card-element");
+        const stripe = Stripe("{{ env('STRIPE_KEY') }}");
+        const elements = stripe.elements();
+        const card = elements.create('card');
+        card.mount('#card-element');
 
-            const form = document.getElementById('payment-form');
+        const form = document.getElementById('payment-form');
 
-            form.addEventListener('submit', async (e) => {
-                e.preventdefault();
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
 
-                const {
-                    paymentMethod,
-                    error
-                } = await stripe.createpaymentMethod({
-                    type: 'card',
+            const name = document.getElementById('name').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const amount = document.getElementById('amount').value;
+            const order_id = document.getElementById('order_id').value;
+
+            // ✅ Validation
+            if (name === "") {
+                document.getElementById('card-errors').textContent = "Please enter your name.";
+                return;
+            }
+
+            if (email === "") {
+                document.getElementById('card-errors').textContent = "Please enter your email.";
+                return;
+            }
+
+            const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailPattern.test(email)) {
+                document.getElementById('card-errors').textContent = "Please enter a valid email.";
+                return;
+            }
+
+            // Optional: show loading state
+            document.getElementById('card-errors').textContent = "Processing...";
+
+            const response = await fetch("{{ route('stripe.intent') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                },
+                body: JSON.stringify({
+                    name,
+                    email,
+                    amount,
+                    order_id
+                })
+            });
+
+            const data = await response.json();
+
+            const {
+                error,
+                paymentIntent
+            } = await stripe.confirmCardPayment(data.clientSecret, {
+                payment_method: {
                     card: card,
                     billing_details: {
-                        name: document.getElementById('name').value,
-                        email: document.getElementById('email').value
-                    },
-                    if (error) {
-                        document.getElementById('card-errors').textContent = error.message;
-                    } else {
-                        fetch('/payment-intent', {
-                            method: "POST",
-                            header: {
-                                'Content-Type': 'application/json',
-                                'X-CSRF_TOKEN': document.querySelector('input[name="_token"]')
-                                    .value
-                            },
-                            body: JSON.stringify({
-                                    payment_method: paymentMethod.id,
-                                    amount: {{ $total * 100 }}, // In paise
-                                    email: document.getElementById('email').value,
-                                    name: document.getElementById('name').value
-                                })
-                                .then(res => res.json())
-                                .then(async data => {
-                                    const result = await stripe.confirmCardPayment(data
-                                        .client_secret);
-                                    if (result.error) {
-                                        document.getElementById('card-errors')
-                                            .textContent = result.error.message;
-                                    } else if (result.paymentIntent.status ===
-                                        'succeeded') {
-                                        alert('Payment successful!');
-                                        window.location.href = '/thank-you';
-                                    }
-                                });
-                        });
+                        name: name,
+                        email: email
                     }
+                }
+            });
 
-                });
-            })
-        )
+            if (error) {
+                document.getElementById('card-errors').textContent = error.message;
+            } else {
+                // Payment success
+                window.location.href = '/thank-you/' + order_id;
+
+            }
+        });
     </script>
-@endsection
+@endpush

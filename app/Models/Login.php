@@ -2,21 +2,26 @@
 
 namespace App\Models;
 
+use Illuminate\Auth\Authenticatable;
+use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Login extends Model
+class Login extends Model implements AuthenticatableContract
 {
-    use HasFactory;
-    protected $table='login';
+    use HasFactory, Authenticatable;
 
-    protected $primaryKey = 'email'; // using email as unique key
-    public $incrementing = false;    // email is not auto-increment
-    public $timestamps = false; 
+    protected $table = 'login';
 
-    protected $fillable=[
+    // Set email as primary key
+    protected $primaryKey = 'email';
+    public $incrementing = false;
+    protected $keyType = 'string'; // since email is a string key
+    public $timestamps = false;
+
+    protected $fillable = [
         'name',
         'email',
-        'password'
+        'password',
     ];
 }

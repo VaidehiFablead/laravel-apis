@@ -78,6 +78,11 @@
                                         </div>
 
 
+                                        <div class="">
+                                            <a href={{route('google.login')}} class="btn btn-block  btn btn-danger" name="google"
+                                                id="google" type="submit"><i class="fa-brands fa-google"></i> Login With google</a>
+                                        </div>
+
                                         <a href="#!" class="small text-muted">Terms of use.</a>
                                         <a href="#!" class="small text-muted text-end">Privacy policy</a>
                                     </form>

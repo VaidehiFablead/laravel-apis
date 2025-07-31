@@ -177,10 +177,11 @@
                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                 },
                 success: function(res) {
-                    Swal.fire('Success!', 'Order placed successfully!', 'success');
-                    $('#orderForm')[0].reset();
-                    // $('#productRows').html($('.product-row:first').clone());
-                    updateSubTotal();
+                    if (res.redirect_url) {
+                        window.location.href = res.redirect_url;
+                    } else {
+                        Swal.fire('Error', 'No redirect URL found!', 'error');
+                    }
                 },
                 error: function(xhr) {
                     let msg = 'Something went wrong!';

@@ -13,6 +13,8 @@ class Customer extends Model
 
     protected $primaryKey = 'customer_id'; 
 
+   
+
     public $timestamps = true;
     protected $fillable = [
         'name',
