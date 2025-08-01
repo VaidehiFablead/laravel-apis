@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use PHPUnit\Metadata\Metadata;
 use Stripe\PaymentIntent;
 use Stripe\Stripe;
+use Twilio\Rest\Client;
 
 class StripePaymentController extends Controller
 {
@@ -62,7 +63,7 @@ class StripePaymentController extends Controller
             ];
         }
 
-         $customer = Customer::find($order->customer_id);
+        $customer = Customer::find($order->customer_id);
         Stripe::setApiKey(env('STRIPE_SECRET'));
 
         $paymentIntent = PaymentIntent::create([
@@ -80,8 +81,46 @@ class StripePaymentController extends Controller
             'products' => $products,
             'qtys' => $quantities,
             'prices' => $prices,
-            'customer' => $customer, 
+            'customer' => $customer,
             'clientSecret' => $paymentIntent->client_secret
         ]);
+    }
+
+
+    public function paymentSuccess(Request $request)
+    {
+        try {
+            $request->validate([
+                'order_id' => 'required|exists:order,order_id'
+            ]);
+
+            $order = Orders::with('customer')->where('order_id', $request->order_id)->first();
+
+            if (!$order || !$order->customer) {
+                return response()->json(['error' => 'Customer not found.'], 404);
+            }
+
+            $customer = $order->customer;
+
+            $phone = preg_replace('/[^0-9]/', '', $customer->contact_info);
+            if (strlen($phone) == 10) {
+                $phone = '+91' . $phone;
+            }
+
+            $client = new Client(env('TWILIO_SID'), env('TWILIO_AUTH_TOKEN'));
+
+            $message = "Hello {$customer->name}, your payment for Order ID {$order->order_id} (₹{$order->subtotal}) was successful. Thank you!";
+
+            $client->messages->create($phone, [
+                'from' => env('TWILIO_PHONE_NUMBER'),
+                'body' => $message
+            ]);
+
+            return response()->json(['message' => 'SMS sent successfully.']);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'error' => 'Payment Success Error: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }

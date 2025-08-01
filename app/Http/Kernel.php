@@ -67,8 +67,7 @@ class Kernel extends HttpKernel
     ];
 
 
-    // protected $routeMiddleware = [
-    //     // other middleware...
-    //     'checklogin' => \App\Http\Middleware\CheckLogin::class,
-    // ];
+    protected $routeMiddleware = [
+        'checkLogin' => \App\Http\Middleware\CheckLogin::class,
+    ];
 }

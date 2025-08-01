@@ -37,7 +37,8 @@
                     <input type="hidden" id="order_id" value="{{ $order->order_id }}">
                     <input type="hidden" id="amount" value="{{ $order->subtotal }}">
                     <div class="mb-3">
-                        <input type="text" id="name" class="form-control">
+                        <input type="text" id="name" class="form-control" value="{{ $customerName }}" readonly>
+
                     </div>
                     <div class="mb-3">
                         <input type="email" id="email" placeholder="Email" class="form-control">
@@ -92,8 +93,8 @@
             const response = await fetch("{{ route('stripe.intent') }}", {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Content-Type': "application/json",
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
                 },
                 body: JSON.stringify({
                     name,
@@ -121,9 +122,30 @@
             if (error) {
                 document.getElementById('card-errors').textContent = error.message;
             } else {
-                // Payment success
-                window.location.href = '/thank-you/' + order_id;
 
+                if (paymentIntent.status === "succeeded") {
+                    fetch("/payment-success", {
+                            method: "POST",
+                            headers: {
+                                'Content-Type': "application/json",
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                            },
+                            body: JSON.stringify({
+                                order_id: order_id
+                            })
+                        })
+                        .then(res => res.json())
+                        .then(data => {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Success!',
+                                text: data.message || "Payment successful and SMS sent!",
+                                confirmButtonText: 'OK'
+                            }).then(() => {
+                                window.location.href = '/thank-you/' + order_id;
+                            });
+                        });
+                }
             }
         });
     </script>

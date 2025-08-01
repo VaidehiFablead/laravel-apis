@@ -45,10 +45,6 @@ Route::post('/profile', [ProfileController::class, 'updateProfile'])->name('prof
 
 // tables
 Route::get('/tables', [ProductController::class, 'showTable'])->name('tables');
-// Route::get('/tables', function () {
-//     return view('tables');
-// })->middleware('checklogin');
-
 
 // Show form 
 Route::get('/add-product', [ProductController::class, 'create'])->name('add-product');
@@ -116,21 +112,13 @@ Route::post('/customer/update/{id}', [ViewCustomerController::class, 'update'])-
 
 
 // orders
-// Route::get('/orders', [OrdersController::class, 'showOrder'])->name('orders');
-// Route::get('/orders/create', [OrdersController::class, 'createCustomer'])->name('orders.create');
-// Route::post('/place-order', [OrdersController::class, 'store'])->name('orders.store');
 Route::get('/orders', [OrdersController::class, 'showOrder'])->name('orders');
 Route::post('/place-order', [OrdersController::class, 'store'])->name('orders.store');
 
 
-// Route::get('/viewOrder',[OrdersController::class,'index'])->name('viewOrder');
-
-// Route::post('/delete-order/{id}', [OrdersController::class, 'deleteOrder'])->name('order.delete');
-
 Route::get('/viewOrder', [OrdersController::class, 'viewOrder'])->name('viewOrder');
 
 // stripe payment route
-
 Route::get('/stripe-checkout/{order_id}', [OrdersController::class, 'stripeCheckout'])->name('stripe.checkout');
 Route::post('/stripe/payment-intent', [StripePaymentController::class, 'stripePaymentIntent'])->name('stripe.intent');
 
@@ -139,9 +127,21 @@ Route::post('/stripe/payment-intent', [StripePaymentController::class, 'stripePa
 Route::get('/auth/google', [GoogleController::class, 'redirectGoogle'])->name('google.login');
 Route::get('/auth/google/callback', [GoogleController::class, 'handleGoogleCallback']);
 
-
 // success page
 Route::get('/thank-you/{order_id}', function ($order_id) {
     $order = \App\Models\Orders::findOrFail($order_id);
     return view('thank-you', compact('order'));
 });
+
+Route::post('/payment-success', [StripePaymentController::class, 'paymentSuccess']);
+
+// middleware
+Route::middleware(['checkLogin'])->group(function () {
+    Route::get('/tables', [ProductController::class, 'showTable'])->name('tables');
+    Route::get('/orders', [OrdersController::class, 'showOrder'])->name('orders');
+    Route::get('/profile', function () {return view('profile');});
+    Route::get('/add-product', [ProductController::class, 'create'])->name('add-product');
+    Route::get('/change-password', [ProfileController::class, 'showChangePasswordForm'])->name('password.form');
+    Route::get('/addproductform', [ProductController::class, 'create'])->name('product.create');
+});
+

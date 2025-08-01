@@ -9,6 +9,8 @@ use App\Models\Product;
 use Illuminate\Http\Request;
 use Stripe\PaymentIntent;
 use Stripe\Stripe;
+use Twilio\Rest\Client as RestClient;
+use Twilio\Rest\Client;
 
 class OrdersController extends Controller
 {
@@ -37,11 +39,11 @@ class OrdersController extends Controller
         $order = new Orders();
         $order->customer_id = $request->customer_id;
         $order->subtotal = $request->subtotal;
-        $order->save();  // Now $order->order_id will be available
+        $order->save();
 
         // Save order items
         OrderItem::create([
-            'order_id' => $order->order_id, // ✅ Use order_id here
+            'order_id' => $order->order_id,
             'product_name' => json_encode($request->product_name),
             'qty' => json_encode($request->qty),
             'price' => json_encode($request->price),
@@ -57,22 +59,23 @@ class OrdersController extends Controller
     }
 
 
-
     public function viewOrder()
     {
-        $orders = OrderItem::with('order.customer')->get(); // eager load nested relationship
+        $orders = OrderItem::with('order.customer')->get();
         return view('viewOrder', compact('orders'));
     }
 
     public function stripeCheckout($order_id)
     {
-        $order = Orders::findOrFail($order_id);
+        $order = Orders::with('customer')->findOrFail($order_id);
         $orderItem = OrderItem::where('order_id', $order_id)->first();
 
         $productNames = json_decode($orderItem->product_name);
         $qtys = json_decode($orderItem->qty);
         $prices = json_decode($orderItem->price);
 
-        return view('stripe', compact('order', 'productNames', 'qtys', 'prices'));
+        $customerName = $order->customer->name;
+
+        return view('stripe', compact('order', 'productNames', 'qtys', 'prices', 'customerName'));
     }
 }

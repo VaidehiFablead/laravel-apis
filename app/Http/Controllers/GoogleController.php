@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Login;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Session;
 use Laravel\Socialite\Facades\Socialite;
 
 class GoogleController extends Controller
@@ -19,15 +20,20 @@ class GoogleController extends Controller
 
     public function handleGoogleCallback()
     {
-        $googleUser = Socialite::driver('google')->user();
+        $googleUser = Socialite::driver('google')->stateless()->user();
         // dd($googleUser);
 
-
-        // Just match or create by email and name only (no google_id)
         $user = Login::updateOrCreate(
             ['email' => $googleUser->getEmail()],
             ['name' => $googleUser->getName()]
         );
+
+        if ($user) {
+            Auth::login($user);
+            Session::put('login_id', $user->login_id);
+            Session::put('name', $user->name);
+            Session::put('email', $user->email);
+        }
 
         Auth::login($user);
 
